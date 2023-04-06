@@ -1,25 +1,33 @@
+let biggest = 0;
+let offSets = {};
+let thArray = [];
+let rows = {};
+let previousWidth;
+let initialData = [[]]
+
+
 function globalUI(table, tbody) {
-  let thead = document.querySelector("thead");
+  let thead = table.querySelector("thead");
   let trThead = thead.querySelector("tr");
   let container = table.parentNode;
-
-  let biggest = 0;
-  const offSets = {};
-  const thArray = [];
-  const rows = {};
-  let previousWidth = container.offsetWidth;
-
-  getOffSets();
+  
+  initialData = [[]]
+  biggest = 0;
+  offSets = {};
+  thArray = [];
+  rows = {};
+  previousWidth = container.offsetWidth;
+  
+  getOffSets()
   loadedTable();
-
-  window.addEventListener("resize", renderize);
-
+  
   function getOffSets() {
     let ths = trThead.querySelectorAll("th");
-    ths.forEach((ths, i) => {
-      offSets[i] = ths.offsetWidth;
+    ths.forEach((th, i) => {
+      initialData[0].push(th)
+      offSets[i] = th.offsetWidth;
     });
-
+  
     biggest = Object.values(offSets).sort((a, b) => b - a)[0]
   }
 
@@ -112,28 +120,29 @@ function globalUI(table, tbody) {
         let lastSaved = rows[i / 2].length - 1;
         tr.append(rows[i / 2][lastSaved]);
         rows[i / 2].pop();
-
+        
         let nextRow = trs[i + 1].querySelector("td");
         let ul = nextRow.querySelector("ul");
         let list = ul.querySelectorAll("li");
         let lastTdNext = list[0];
         lastTdNext.remove();
-
+        
         if (thArray.length - 1 === 0) {
           nextRow.remove();
           trs[i + 1].remove();
           delete rows[i / 2];
         }
-
+        
         if (!rows[0]) {
           let tds = tr.querySelectorAll("td");
           tds[0].querySelector("span").classList.remove("red");
           tds[0].querySelector("span").classList.add("hidden");
         }
       }
-
+      
       trThead.append(lastColumn.th);
       thArray.pop();
+      
     }
   }
 
@@ -180,31 +189,65 @@ function globalUI(table, tbody) {
   `;
     return template;
   }
+
+  return {
+    thead: initialData,
+    renderize
+  }
 }
 
 // Class initializer
 class TableUI {
+  thead;
   table = "";
   tbody = "";
+  tfooter = ""
   adaptative;
+  initialData;
+  finalData;
   pages = 0;
   perPage = 5;
+  btnPreview = "Prev"
+  btnNext = "Next"
+  currentPage = 1
   constructor(tableID) {
     this.table = document.getElementById(tableID);
     this.tbody = this.table.querySelector("tbody");
+    this.thead = this.table.querySelector('thead');
   }
 
   create(props) {
-    this.loadData(props.data)
-    this.onClick()
-    this.loadFooter()
-    globalUI(this.table, this.tbody)
+    this.data = props.data
+    this.loadData(this.query(this.perPage, this.currentPage))
+    this.pages = this.getTotalPages(this.perPage, this.data.length)
+    // Iniciamos la responsividad con los datos iniciales ----------
+    this.initialData = globalUI(this.table, this.tbody)
+    window.addEventListener("resize", this.initialData.renderize);
+    // --------------------------------------------------------------
+
     if(props.perPage && props.perPage > 5) {
       this.perPage = props.perPage
     }
+
+    if(props.btnNext) {
+      this.btnNext = props.btnNext
+    }
+
+    if(props.btnPreview) {
+      this.btnPreview = props.btnPreview
+    }
+
+    if(props.query) {
+      this.query = props.query
+    }
+
+    this.loadFooter()
+    this.onClick()
+
   }
 
   loadData(data) {
+    this.tbody.innerHTML = ""
     data.forEach((info, i) => {
       let tr = document.createElement("tr");
       let trId = `tr-${i}`;
@@ -227,22 +270,45 @@ class TableUI {
 
       this.tbody.appendChild(tr);
     });
-    this.pages = this.getTotalPages(this.perPage, data.length)
   }
 
   loadFooter() {
     let ths = this.table.querySelectorAll('th')
-    const footer = this.table.createTFoot();
-    const row = footer.insertRow();
+    this.tfooter = this.table.createTFoot();
+    const row = this.tfooter.insertRow();
     const td = row.insertCell();
+    const containerPager = document.createElement('div')
+    containerPager.classList.add('td-div-pages')
+    containerPager.appendChild(this.createBtnPages(this.pages, this.currentPage))
     td.classList.add('footer-ui')
-    td.innerHTML= `Paginas totales ${this.pages}`
-    console.log( ths.length);
     td.setAttribute('colspan', ths.length)
+    td.appendChild(containerPager)
   }
 
-  createBtnPages() {
+  createBtnPages(pages, selected) {
+    const pagination = document.createElement('div')
+    const btnPreview = document.createElement('div')
+    pagination.classList.add('pagination')
+    btnPreview.classList.add('btn-preview')
+    btnPreview.innerHTML = this.btnPreview
+    pagination.appendChild(btnPreview)
+    
+    for(let i = 0; i < pages; i++) {
+      const btnNumber = document.createElement('div')
+      btnNumber.classList.add('btn-number')
+      btnNumber.setAttribute('btnId', (i + 1))
+      btnNumber.innerHTML = i + 1
+      if((i + 1) === selected) {
+        btnNumber.classList.add('page-selected')
+      }
+      pagination.appendChild(btnNumber)
+    }
+    const btnNext = document.createElement('div')
+    btnNext.classList.add('btn-next')
+    btnNext.innerHTML = this.btnNext
+    pagination.appendChild(btnNext)
 
+    return pagination
   }
 
   getTotalPages(perPage, total) {
@@ -265,6 +331,80 @@ class TableUI {
         row.nextSibling.classList.toggle("hidden");
       }
     };
+
+    this.tfooter.onclick = (e) => {
+      let btn = e.target.classList
+      // Detectamos sobre que boton se dió click
+      if(btn.contains('btn-number')) {
+        // Obtenemos el numero de pagina del boton
+        const pageNumber = e.target.getAttribute('btnId')
+        this.deactiveBtns()
+        this.currentPage = parseInt(pageNumber)
+        this.activateBtn()
+      }
+
+      if(btn.contains('btn-preview')) {
+        this.getPrevPage()      
+      }
+
+      if(btn.contains('btn-next')) {
+        this.getNextPage()      
+      }
+    }
+  }
+
+  deactiveBtns() {
+    let btns = this.tfooter.querySelectorAll('.btn-number')
+    btns.forEach(btn => {
+      btn.classList.remove('page-selected')
+    })
+  }
+
+  getNextPage() {
+    if(this.currentPage < this.pages) {
+      this.currentPage++
+      this.deactiveBtns()
+      this.activateBtn()
+      this.reRender()
+    }
+  }
+
+  getPrevPage() {
+    if(this.currentPage > 1) {
+      this.currentPage--
+      this.deactiveBtns()
+      this.activateBtn()
+      this.reRender()
+    }
+  }
+
+  activateBtn() {
+    let btns = this.tfooter.querySelectorAll('.btn-number')
+    btns.forEach((btn, index)=> {
+      if((index + 1) === this.currentPage) {
+        btn.classList.add('page-selected')
+      }
+    })
+    this.reRender()
+  }
+
+  reRender() {
+    window.removeEventListener("resize", this.initialData.renderize);
+    this.thead.innerHTML = "" 
+    this.trThead = document.createElement('tr')
+    this.initialData.thead[0].forEach(th => {
+      this.trThead.appendChild(th)
+    })
+    this.thead.appendChild(this.trThead)       
+    this.loadData(this.query(this.perPage, this.currentPage))
+    this.initialData = globalUI(this.table, this.tbody)
+    window.addEventListener("resize", this.initialData.renderize);
+  }
+
+  query(perPage, currentPage) {
+    const init = (perPage * (currentPage - 1)) + 1
+    const end = init + (perPage - 1)
+    return this.data.slice((init - 1), end)
   }
 }
 
