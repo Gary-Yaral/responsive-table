@@ -193,15 +193,39 @@ const data = [
   ],
 ]
 
-new TableUI('myTable')
-  .create({
-    data,
-    totalRows: 0,
-    btnPreview: "Anterior",
-    btnNext:"Siguiente",
-    /*query: (perPage, currentPage) => {
-      const init = (perPage * (currentPage - 1)) + 1
-      const end = init + (perPage - 1)
-      return data.slice((init - 1), end)
-    }*/
+async function getData() {
+  return await (
+    await fetch('https://jsonplaceholder.typicode.com/posts')
+  ).json()
+}
+
+async function getTotalItems() {
+  return (await (
+    await fetch('https://jsonplaceholder.typicode.com/posts')
+  ).json()).length
+}
+
+function transformData(result) {
+  return result.map(item => {
+    const arr = Object.values(item)
+    const valor = arr.splice(1, 1)[0];
+    arr.splice(0, 0, valor);
+    return arr
   })
+}
+
+(async() => {
+  new TableUI('myTable')
+    .create({
+      /*data,*/
+      btnPreview: "Anterior",
+      btnNext:"Siguiente",
+      totalItems: await getTotalItems(),
+      query: async (perPage, currentPage) => {
+        const init = (perPage * (currentPage - 1)) + 1
+        const end = init + (perPage - 1)
+        const json = transformData(await getData())
+        return json.slice((init - 1), end)
+      }
+    })
+})()

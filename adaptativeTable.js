@@ -202,9 +202,12 @@ class TableUI {
   table = "";
   tbody = "";
   tfooter = ""
+  data = []
+  dataBase = []
   adaptative;
   initialData;
   finalData;
+  total = 0;
   pages = 0;
   perPage = 5;
   btnPreview = "Prev"
@@ -216,19 +219,22 @@ class TableUI {
     this.thead = this.table.querySelector('thead');
   }
 
-  create(props) {
-    this.data = props.data
-    this.loadData(this.query(this.perPage, this.currentPage))
-    this.pages = this.getTotalPages(this.perPage, this.data.length)
-    // Iniciamos la responsividad con los datos iniciales ----------
-    this.initialData = globalUI(this.table, this.tbody)
-    window.addEventListener("resize", this.initialData.renderize);
+  async create(props) {
+    if(props.data && !props.query && !props.totalItems) {
+      this.dataBase = props.data
+      this.data = this.query(this.perPage, this.currentPage)
+      this.loadData(this.data)
+      this.pages = this.getTotalPages(this.perPage, this.dataBase.length)
+      // Iniciamos la responsividad con los datos iniciales ----------
+      this.initialData = globalUI(this.table, this.tbody)
+      window.addEventListener("resize", this.initialData.renderize);
+    }
     // --------------------------------------------------------------
-
+    
     if(props.perPage && props.perPage > 5) {
       this.perPage = props.perPage
     }
-
+    
     if(props.btnNext) {
       this.btnNext = props.btnNext
     }
@@ -236,11 +242,18 @@ class TableUI {
     if(props.btnPreview) {
       this.btnPreview = props.btnPreview
     }
-
-    if(props.query) {
+    
+    if(props.query && props.totalItems && !props.data) {
       this.query = props.query
+      this.total = props.totalItems
+      this.data = await this.query(this.perPage ,this.currentPage)
+      this.loadData(this.data)
+      // Iniciamos la responsividad con los datos iniciales ----------
+      this.initialData = globalUI(this.table, this.tbody)
+      this.pages = this.getTotalPages(this.perPage, this.total)
+      window.addEventListener("resize", this.initialData.renderize);
     }
-
+    
     this.loadFooter()
     this.onClick()
 
@@ -365,7 +378,6 @@ class TableUI {
       this.currentPage++
       this.deactiveBtns()
       this.activateBtn()
-      this.reRender()
     }
   }
 
@@ -374,7 +386,6 @@ class TableUI {
       this.currentPage--
       this.deactiveBtns()
       this.activateBtn()
-      this.reRender()
     }
   }
 
@@ -388,15 +399,16 @@ class TableUI {
     this.reRender()
   }
 
-  reRender() {
+  async reRender() {
     window.removeEventListener("resize", this.initialData.renderize);
     this.thead.innerHTML = "" 
     this.trThead = document.createElement('tr')
     this.initialData.thead[0].forEach(th => {
       this.trThead.appendChild(th)
     })
-    this.thead.appendChild(this.trThead)       
-    this.loadData(this.query(this.perPage, this.currentPage))
+    this.thead.appendChild(this.trThead)  
+    this.data = await this.query(this.perPage, this.currentPage)
+    this.loadData(this.data)
     this.initialData = globalUI(this.table, this.tbody)
     window.addEventListener("resize", this.initialData.renderize);
   }
@@ -404,7 +416,7 @@ class TableUI {
   query(perPage, currentPage) {
     const init = (perPage * (currentPage - 1)) + 1
     const end = init + (perPage - 1)
-    return this.data.slice((init - 1), end)
+    return this.dataBase.slice((init - 1), end)
   }
 }
 
