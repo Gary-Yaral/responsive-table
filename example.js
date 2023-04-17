@@ -25,9 +25,9 @@ function transformData(result) {
       text: "Buscar",
       placeholder: "escribir..."
     },
-    perPageText:{
-      left: "Mostrar",
-      right: "registros"
+    perPageProps:{
+      textLeft: "Mostrar",
+      textRight: "registros"
     },
     btnPreview: "Anterior",
     btnNext: "Siguiente"
