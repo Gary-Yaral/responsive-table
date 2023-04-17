@@ -20,7 +20,8 @@ function transformData(result) {
   const tableUI = new TableUI('myTable')
   tableUI.create({ 
     data: json, 
-    totalRows: rows, 
+    idiom: "ES"
+  /*totalRows: rows, 
     searchProps:{
       text: "Buscar",
       placeholder: "escribir..."
@@ -29,7 +30,8 @@ function transformData(result) {
       textLeft: "Mostrar",
       textRight: "registros"
     },
+
     btnPreview: "Anterior",
-    btnNext: "Siguiente"
+    btnNext: "Siguiente", */
   })
 })()

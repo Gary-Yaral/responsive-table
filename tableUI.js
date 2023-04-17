@@ -243,8 +243,16 @@ class TableUI {
   btnPreview = "Preview";
   data = [];
   backup = []
-  wasFound = false
-  perPageOptions = [5, 10, 15, 20, 50, 100]
+  wasFound = false;
+  pagesInfo;
+  idiom = "EN";
+  perPageOptions = [5, 10, 15, 20, 50, 100];
+  pagesInfoProps= {
+    first: "",
+    second: "",
+    third: "",
+    fourth: ""
+  };
   perPageProps= {
     textLeft: "Show",
     textRight: 'entries',
@@ -265,15 +273,19 @@ class TableUI {
   create(props) {
     this.data = props.data || []
     this.backup = props.data || []
-    this.totalRows = props.totalRows || 0
+    this.totalRows = props.totalRows || this.data.length
+    this.idiom = props.idiom || this.idiom
     // Function that loads the data in the table
     this.pagination = props.pagination || this.query
+    this.filter = props.filter || this.filter
     // Button options
     this.btnNext = props.btnNext || this.btnNext
     this.btnPreview = props.btnPreview || this.btnPreview
     // Load other props
+    this.configIdiom()
     this.perPageProps = props.perPageProps ? {...this.perPageProps, ...props.perPageProps} : this.perPageProps
     this.searchProps = props.searchProps ? { ...this.searchProps, ...props.searchProps} : this.searchProps
+    // Configurate idiom
     // Generate header top
     createTopHeader(
       this.table, 
@@ -306,6 +318,34 @@ class TableUI {
     // load buttons action
     this.loadPageButtons()
     this.onInit()
+  }
+
+  configIdiom() {
+    if(this.idiom === "EN") {
+      this.btnNext = "Next"
+      this.btnPreview = "Preview"
+      this.perPageProps.textLeft = "Show"
+      this.perPageProps.textRight = "entries"
+      this.searchProps.text = "search"
+      this.searchProps.placeholder = "filter..."
+      this.pagesInfoProps.first = "Showing"
+      this.pagesInfoProps.second = "to"
+      this.pagesInfoProps.third = "of"
+      this.pagesInfoProps.fourth = "entries"
+    }
+    
+    if(this.idiom === "ES") {
+      this.btnNext = "Anterior"
+      this.btnPreview = "Siguiente"
+      this.perPageProps.textLeft = "Mostrar"
+      this.perPageProps.textRight = "entradas"
+      this.searchProps.text = "Buscar"
+      this.searchProps.placeholder = "Filtrar..."
+      this.pagesInfoProps.first = "Entrada"
+      this.pagesInfoProps.second = "a"
+      this.pagesInfoProps.third = "de"
+      this.pagesInfoProps.fourth = "entradas"
+    }
   }
 
   search(e) {
@@ -428,10 +468,19 @@ class TableUI {
 
   loadPageButtons() {
     if(this.buttonsBlock) this.buttonsBlock.remove()
+    if(this.infoTable) this.infoTable.remove()
+    if(this.pagesInfo) this.pagesInfo.remove()
+    this.infoTable = document.createElement('div')
+    this.pagesInfo = document.createElement('div')
     this.buttonsBlock = document.createElement('div')
     this.buttonsBlock.classList.add('td-div-pages')
+    this.infoTable.classList.add('info-table')
+    this.pagesInfo.classList.add('pages-info')
     this.buttonsBlock.appendChild(this.createBtnPages(this.pages, this.currentPage)) 
-    this.table.parentNode.appendChild(this.buttonsBlock)
+    this.infoTable.appendChild(this.pagesInfo)
+    this.infoTable.appendChild(this.buttonsBlock)
+    this.table.parentNode.appendChild(this.infoTable)
+    this.showRangePages() 
   }
 
   activateBtn() {
@@ -443,6 +492,15 @@ class TableUI {
     })
     
     this.setData(this.pagination(this.perPage, this.currentPage))
+    this.showRangePages()
+  }
+
+  showRangePages() {
+    const {first, second, third, fourth} = this.pagesInfoProps
+      const initialRow = ((this.currentPage - 1) * this.perPage + 1)
+      const finalRow = initialRow + (this.perPage - 1)
+      this.pagesInfo.innerHTML =`
+      ${first} ${initialRow} ${second} ${finalRow} ${third} ${this.totalRows} ${fourth}`
   }
   
   setPerPage(e) {
