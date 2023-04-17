@@ -317,7 +317,7 @@ class TableUI {
       this.loadPerPage()
     } else {
       this.totalRows = this.data.length + 1
-      this.loadPerPage()
+      this.loadPerPage(false)
       this.getEmptyRow()
     }
   }
@@ -454,12 +454,12 @@ class TableUI {
     this.onInit()
   }
 
-  loadPerPage() {
+  loadPerPage(activate = true) {
     this.currentPage = 1
     this.pages = this.getTotalPages(this.perPage, this.totalRows)
     this.setData(this.pagination(this.perPage, this.currentPage))
     this.loadPageButtons()
-    this.onInit()
+    if(activate) this.onInit()
   }
 
   deactiveBtns() {
