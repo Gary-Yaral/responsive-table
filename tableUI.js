@@ -33,7 +33,6 @@ function generateRows(table, data) {
 
     tbody.appendChild(newRow)
     tbody.appendChild(childRow)
-
   })
 
   tbody.onclick = (e) => {
@@ -42,6 +41,60 @@ function generateRows(table, data) {
       setVisibleChild(e.target, e.target.getAttribute('rowId'))
     }
   }
+}
+
+function loadFooter(table) {
+  const ths = table.querySelectorAll('th')
+  const tfooter = table.createTFoot();
+  const row = tfooter.insertRow();
+  ths.forEach(th => {
+    row.appendChild(th.cloneNode(true))
+  })
+}
+
+function createTopHeader(table, perPageOptions, perPageProps, searchProps) {
+  const container = table.parentNode
+  const section = document.createElement('div')
+  section.classList.add('top-section')
+  section.appendChild(generatePerPage(perPageOptions, perPageProps))
+  section.appendChild(generateSearch(searchProps))
+  container.insertBefore(section, table)
+}
+
+function generatePerPage(options, perPageProps) {
+  const perPage = document.createElement('div')
+  const spanLeft = document.createElement('span')
+  const select = document.createElement('select')
+  const spanRight = document.createElement('span')
+  spanLeft.innerHTML = perPageProps.textLeft
+  spanRight.innerHTML = perPageProps.textRight
+  perPage.classList.add('per-page')
+
+  select.onchange = perPageProps.change
+
+  options.forEach(value => {
+    const option = document.createElement('option')
+    option.value = value 
+    option.innerHTML = value 
+    select.appendChild(option)
+  })
+  perPage.appendChild(spanLeft)
+  perPage.appendChild(select)
+  perPage.appendChild(spanRight)
+  return perPage
+}
+
+function generateSearch(searchProps) {
+  const search = document.createElement('div')
+  const spanLeft = document.createElement('span')
+  const input = document.createElement('input')
+  input.oninput = searchProps.method
+  input.setAttribute('placeholder', searchProps.placeholder)
+  search.classList.add('search')
+  spanLeft.innerHTML = searchProps.text
+  search.appendChild(spanLeft)
+  search.appendChild(input)
+  return search
 }
 
 function setVisibleChild(btn, rowId) {
@@ -110,9 +163,20 @@ function listenChanges(table) {
 }
 
 function resetTable(table) {
+  if(!table.querySelector('tfoot')) loadFooter(table)
+  const tfoot = table.querySelector('tfoot')
   const thead = table.querySelector('thead')
   const tbody = table.querySelector('tbody')
   const ths = thead.querySelectorAll('th')
+  const thsFoot = tfoot.querySelectorAll('th')
+  ths.forEach(th => {
+    th.classList.remove('hidden')
+  })
+
+  thsFoot.forEach(td => {
+    td.classList.remove('hidden')
+  })
+
   ths.forEach(th => {
     th.classList.remove('hidden')
   })
@@ -120,16 +184,18 @@ function resetTable(table) {
 }
 
 function hideColumns(table) {
+  const tbody = table.querySelector('tbody')
   const thead = table.querySelector('thead')
   hideLastTH(thead)
-  // Select tbody
-  const tbody = table.querySelector('tbody')
   // Select all principals tr of tbody
   const trs = tbody.querySelectorAll('tr.parent-row') 
   hideLastTD(trs)
   // Select all secondary tr of tbody
   const tds = tbody.querySelectorAll('tr.child-row') 
   enableLastLi(tds)
+  // Select all td of tfoor
+  const tfoot = table.querySelector('tfoot')
+  hideLastTfootTD(tfoot)
 }
 
 function hideLastTH(tr) {
@@ -140,13 +206,6 @@ function hideLastTH(tr) {
     td.classList.add('hidden')
   }
 }
-
-function enableLastLi(tds) { 
-  tds.forEach((td, i) => {
-    const ul = td.querySelectorAll('li.hidden')
-    ul[ul.length - 1].classList.remove('hidden')
-  })
-} 
 
 function hideLastTD(trs) { 
   trs.forEach(tr => {
@@ -159,6 +218,22 @@ function hideLastTD(trs) {
   })
 } 
 
+function enableLastLi(tds) { 
+  tds.forEach((td) => {
+    const ul = td.querySelectorAll('li.hidden')
+    ul[ul.length - 1].classList.remove('hidden')
+  })
+} 
+
+function hideLastTfootTD(tfoot) {
+  const allVisible = tfoot.querySelectorAll('th:not(.hidden)')
+  const lastIndex = allVisible.length - 1
+  if(allVisible.length > 1) {
+    const td = allVisible[lastIndex]
+    td.classList.add('hidden')
+  }
+}
+
 class TableUI {
   table;
   perPage = 5;
@@ -167,6 +242,21 @@ class TableUI {
   btnNext = "Next";
   btnPreview = "Preview";
   data = [];
+  backup = []
+  wasFound = false
+  perPageOptions = [5, 10, 15, 20, 50, 100]
+  perPageProps= {
+    textLeft: "Show",
+    textRight: 'entries',
+    change:  (e) => this.setPerPage(e)
+  }
+
+  searchProps = {
+    text: "search:",
+    placeholder: "",
+    method: (e) => this.search(e)
+  }
+
   constructor(tableId) {
     this.table = document.getElementById(tableId)
     this.table.classList.add('table-ui')
@@ -174,14 +264,31 @@ class TableUI {
 
   create(props) {
     this.data = props.data || []
+    this.backup = props.data || []
     this.totalRows = props.totalRows || 0
+    // Function that loads the data in the table
     this.pagination = props.pagination || this.query
+    // Button options
+    this.btnNext = props.btnNext || this.btnNext
+    this.btnPreview = props.btnPreview || this.btnPreview
+    // Load other props
+    this.perPageProps = props.perPageProps ? {...this.perPageProps, ...props.perPageProps} : this.perPageProps
+    this.searchProps = props.searchProps ? { ...this.searchProps, ...props.searchProps} : this.searchProps
+    // Generate header top
+    createTopHeader(
+      this.table, 
+      this.perPageOptions, 
+      this.perPageProps,
+      this.searchProps
+    )
+    // Create all rows in tbody
     generateRows(
       this.table, 
       this.pagination(
         this.perPage, 
-        this.currentPage
+        this.currentPage    
     ))
+    // Init responsive actions 
     listenChanges(this.table);
     window.addEventListener("resize", () => {
       if(window.innerWidth > 200) {
@@ -194,9 +301,47 @@ class TableUI {
         listenChanges(this.table);
       }
     })
+    // Load pagination
     this.pages = this.getTotalPages(this.perPage, this.totalRows)
-    this.loadFooter()
+    // load buttons action
+    this.loadPageButtons()
     this.onInit()
+  }
+
+  search(e) {
+    const value = e.target.value
+    this.data = this.backup
+    this.data = this.filter(value)
+    if(this.data.length > 0) {
+      this.totalRows = this.data.length
+      this.loadPerPage()
+    } else {
+      this.totalRows = this.data.length + 1
+      this.loadPerPage()
+      this.getEmptyRow()
+    }
+  }
+
+  getEmptyRow() {
+    const thead = this.table.querySelector('thead')
+    const tbody = this.table.querySelector('tbody')
+    const colspan = thead.querySelectorAll('th').length
+    const row = tbody.insertRow()
+    const td = row.insertCell()
+    td.setAttribute("colspan", colspan)
+    td.innerHTML = "Not results"
+    row.classList.add('empty-row')
+    tbody.appendChild(row)
+  }
+
+  filter(value) {
+    const regex = new RegExp(`\\b.*${value.trim()}.*\\b`, "i");
+
+    return this.data.filter(row => {
+      if(row.filter(column => regex.test(column)).length > 0){
+        return true
+      } 
+    })
   }
 
   setData(data, update=false) {
@@ -246,11 +391,9 @@ class TableUI {
   }
 
   onInit() {
-    this.tfooter.onclick = (e) => {
+    this.buttonsBlock.onclick = (e) => {
       let btn = e.target.classList
-      // Detectamos sobre que boton se dió click
       if(btn.contains('btn-number')) {
-        // Obtenemos el numero de pagina del boton
         const pageNumber = e.target.getAttribute('btnId')
         this.deactiveBtns()
         this.currentPage = parseInt(pageNumber)
@@ -283,21 +426,16 @@ class TableUI {
     }
   }
 
-  loadFooter() {
-    let ths = this.table.querySelectorAll('th')
-    this.tfooter = this.table.createTFoot();
-    const row = this.tfooter.insertRow();
-    const td = row.insertCell();
-    const containerPager = document.createElement('div')
-    containerPager.classList.add('td-div-pages')
-    containerPager.appendChild(this.createBtnPages(this.pages, this.currentPage))
-    td.classList.add('footer-ui')
-    td.setAttribute('colspan', ths.length)
-    td.appendChild(containerPager)
+  loadPageButtons() {
+    if(this.buttonsBlock) this.buttonsBlock.remove()
+    this.buttonsBlock = document.createElement('div')
+    this.buttonsBlock.classList.add('td-div-pages')
+    this.buttonsBlock.appendChild(this.createBtnPages(this.pages, this.currentPage)) 
+    this.table.parentNode.appendChild(this.buttonsBlock)
   }
 
   activateBtn() {
-    let btns = this.tfooter.querySelectorAll('.btn-number')
+    let btns = this.buttonsBlock.querySelectorAll('.btn-number')
     btns.forEach((btn, index)=> {
       if((index + 1) === this.currentPage) {
         btn.classList.add('page-selected')
@@ -306,9 +444,26 @@ class TableUI {
     
     this.setData(this.pagination(this.perPage, this.currentPage))
   }
+  
+  setPerPage(e) {
+    this.perPage = parseInt(e.target.value)
+    this.currentPage = 1
+    this.pages = this.getTotalPages(this.perPage, this.totalRows)
+    this.setData(this.pagination(this.perPage, this.currentPage))
+    this.loadPageButtons()
+    this.onInit()
+  }
+
+  loadPerPage() {
+    this.currentPage = 1
+    this.pages = this.getTotalPages(this.perPage, this.totalRows)
+    this.setData(this.pagination(this.perPage, this.currentPage))
+    this.loadPageButtons()
+    this.onInit()
+  }
 
   deactiveBtns() {
-    let btns = this.tfooter.querySelectorAll('.btn-number')
+    let btns = this.buttonsBlock.querySelectorAll('.btn-number')
     btns.forEach(btn => {
       btn.classList.remove('page-selected')
     })

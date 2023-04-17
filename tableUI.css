@@ -9,16 +9,54 @@ body {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+  min-height: 100vh;
 }
 
-.table-container {
-  width: 100%;
+.ui-global {
+  display: flex;
+  height: fit-content;
+  margin-bottom: 3rem;
+}
+
+.ui-container .top-section {
+  display: flex;
+  min-height: 2rem;
+  padding: 1rem;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.ui-container .search,
+.ui-container .per-page {
+  display: flex;
+  gap: 5px;
+  flex-grow: 1;
+  padding: 10px;
+  align-items: center;
+  font-family: Arial;
+}
+
+.ui-container .search {
+  justify-content: flex-end;
+  display: flex;
+  gap: 5px;
+}
+
+.ui-container .per-page select,
+.ui-container .search input {
+  padding: 10px;
+}
+
+.ui-container .search input {
+  border-radius: 5px;
+  border: 1px solid gray
 }
 
 
 .ui-container {
   width: 100%;
   padding: 1rem;
+  min-height: fit-content;
   box-sizing: border-box;
 }
 
@@ -52,7 +90,7 @@ body {
   vertical-align: top;
 }
 
-.parent-row {
+.parent-row, .empty-row {
   background: #f5f5f5;
 }
 
@@ -109,12 +147,17 @@ body {
   background: white;
 }
 .child-row:hover,
-.parent-row:hover{
-  background: #dffff3;
+.parent-row:hover,
+.empty-row:hover{
+  background: #cbffff;
 }
 
 .table-ui tbody .parent-row td:first-child {
-  background: rgba(241, 241, 241, 0.829);
+  background: rgb(234, 234, 234);
+}
+
+.table-ui tbody .parent-row:hover td:first-child {
+  background: skyblue;
 }
 
 .btn-open-plus {
@@ -140,19 +183,29 @@ body {
   border-bottom: var(--border-bottom-th);
 }
 
+.table-ui tfoot {
+  height: auto;
+}
+
+.table-ui tfoot td {
+  min-height: auto;
+  background: blue;
+}
+
 /* FOOTER TABLE */
 
 .td-div-pages {
   width: 100%;
   display: flex;
   align-items: center;
-  height: 100%;
+  font-family: Arial;
+  min-height: fit-content;
   justify-content: flex-end;
 }
 
 .pagination {
   display: flex;
-  height: 2.5rem;
+  min-height: 2.5rem;
   flex-wrap: wrap;
 }
 
@@ -196,3 +249,30 @@ body {
   object-fit: cover;
   aspect-ratio: 1/1;
 } 
+
+.ui-container .empty-row td{
+  text-align: center;
+}
+
+@media screen and (max-width: 550px) {
+  .ui-container .top-section {
+    display: flex;
+    gap: 0;
+    flex-direction: column;
+  }
+
+  .ui-container .per-page {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 0 10px;
+  }
+  
+  .ui-container .search {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+  }
+}

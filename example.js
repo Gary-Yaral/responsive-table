@@ -15,8 +15,21 @@ function transformData(result) {
 
 
 (async() => {
-  const data = await transformData(await getData())
-  const totalRows = data.length
+  const json = await transformData(await getData())
+  const rows = json.length
   const tableUI = new TableUI('myTable')
-  tableUI.create({ data, totalRows })
+  tableUI.create({ 
+    data: json, 
+    totalRows: rows, 
+    searchProps:{
+      text: "Buscar",
+      placeholder: "escribir..."
+    },
+    perPageText:{
+      left: "Mostrar",
+      right: "registros"
+    },
+    btnPreview: "Anterior",
+    btnNext: "Siguiente"
+  })
 })()
