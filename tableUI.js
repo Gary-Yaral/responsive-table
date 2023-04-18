@@ -69,15 +69,14 @@ function generatePerPage(options, perPageProps) {
   spanLeft.innerHTML = perPageProps.textLeft
   spanRight.innerHTML = perPageProps.textRight
   perPage.classList.add('per-page')
-
   select.onchange = perPageProps.change
-
   options.forEach(value => {
     const option = document.createElement('option')
     option.value = value 
     option.innerHTML = value 
     select.appendChild(option)
   })
+
   perPage.appendChild(spanLeft)
   perPage.appendChild(select)
   perPage.appendChild(spanRight)
@@ -246,6 +245,7 @@ class TableUI {
   wasFound = false;
   pagesInfo;
   idiom = "EN";
+  activeElements= ["INPUT", "SELECT"];
   perPageOptions = [5, 10, 15, 20, 50, 100];
   pagesInfoProps= {
     first: "",
@@ -303,7 +303,8 @@ class TableUI {
     // Init responsive actions 
     listenChanges(this.table);
     window.addEventListener("resize", () => {
-      if(window.innerWidth > 200) {
+      const tagName = document.activeElement.tagName
+      if(window.innerWidth > 200 && !this.activeElements.includes(tagName)) {
         generateRows(
           this.table, 
           this.pagination(
