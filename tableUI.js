@@ -245,7 +245,7 @@ class TableUI {
   wasFound = false;
   pagesInfo;
   idiom = "EN";
-  activeElements= ["INPUT", "SELECT"];
+  activeElements= ["INPUT", "SELECT", "TEXTAREA"];
   perPageOptions = [5, 10, 15, 20, 50, 100];
   pagesInfoProps= {
     first: "",
