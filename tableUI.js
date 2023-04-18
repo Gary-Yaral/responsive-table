@@ -335,8 +335,8 @@ class TableUI {
     }
     
     if(this.idiom === "ES") {
-      this.btnNext = "Anterior"
-      this.btnPreview = "Siguiente"
+      this.btnNext = "Siguiente"
+      this.btnPreview = "Anterior"
       this.perPageProps.textLeft = "Mostrar"
       this.perPageProps.textRight = "entradas"
       this.searchProps.text = "Buscar"
